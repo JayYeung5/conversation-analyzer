@@ -34,7 +34,7 @@ type AnalysisDoc = {
 };
 
 function usePersistedToggle(key: string, defaultOpen = true) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState<boolean>(defaultOpen);
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
@@ -116,7 +116,7 @@ export default function ResultsPage() {
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const [docData, setDocData] = useState<AnalysisDoc | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [forceAll, setForceAll] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -152,31 +152,20 @@ export default function ResultsPage() {
   }));
   const keywordCounts = keywords.map(k => ({ term: k.term, count: Number(k.count ?? 0) }));
 
-  const allKeys = useMemo(
-    () =>
-      id
-        ? [
-            `toggle:${id}:summary`,
-            `toggle:${id}:weights`,
-            `toggle:${id}:durations`,
-            `toggle:${id}:keywords`,
-            `toggle:${id}:offtopic`,
-            `toggle:${id}:transcript`,
-          ]
-        : [],
-    [id]
-  );
-
-  const setAll = useCallback(
-    (open: boolean) => {
-      try {
-        allKeys.forEach(k => localStorage.setItem(k, open ? "1" : "0"));
-        setForceAll(open);
-        requestAnimationFrame(() => setForceAll(null));
-      } catch {}
-    },
-    [allKeys]
-  );
+  const setAll = useCallback((open: boolean) => {
+    try {
+      [
+        `toggle:${id}:summary`,
+        `toggle:${id}:weights`,
+        `toggle:${id}:durations`,
+        `toggle:${id}:keywords`,
+        `toggle:${id}:offtopic`,
+        `toggle:${id}:transcript`,
+      ].forEach(k => localStorage.setItem(k, open ? "1" : "0"));
+      setForceAll(open);
+      requestAnimationFrame(() => setForceAll(null));
+    } catch {}
+  }, [id]);
 
   if (loading) return <div className="p-6 text-gray-300">Loading…</div>;
   if (!docData) {
@@ -194,48 +183,54 @@ export default function ResultsPage() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-black text-gray-100 py-8 space-y-8">
-      <div className="flex items-start justify-between gap-4 px-6">
-        <div>
+    <div className="min-h-screen w-full overflow-x-hidden bg-black text-gray-100 py-8 space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 px-4 sm:px-6">
+        <div className="min-w-0">
           <h1 className="text-3xl font-bold text-blue-400">Results</h1>
-          <p className="text-sm text-gray-400">
-            ID: <span className="font-mono">{id}</span>
-            {createdAtStr && <> • {createdAtStr}</>}
-            {source?.kind && <> • Source: {source.kind}{source.name ? ` (${source.name})` : ""}</>}
-            {model && <> • Model: {model}</>}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-400">
+            <span className="shrink-0">ID:</span>
+            <span className="font-mono break-all">{id}</span>
+            {createdAtStr && <span className="shrink-0">• {createdAtStr}</span>}
+            {source?.kind && (
+              <span className="min-w-0">
+                • Source: {source.kind}{source.name ? ` (${source.name})` : ""}
+              </span>
+            )}
+            {model && <span className="shrink-0">• Model: {model}</span>}
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => {
-              const blob = new Blob([JSON.stringify(docData.analysis ?? {}, null, 2)], {
-                type: "application/json",
-              });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `analysis-${id}.json`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            className="px-3 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-800"
-          >
-            Download JSON
-          </button>
-          <button
-            onClick={() => setAll(true)}
-            className="px-3 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-800"
-            title="Expand all sections"
-          >
-            Expand all
-          </button>
-          <button
-            onClick={() => setAll(false)}
-            className="px-3 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-800"
-            title="Collapse all sections"
-          >
-            Collapse all
-          </button>
+
+        <div className="w-full sm:w-auto pt-1 sm:pt-0">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <button
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(docData.analysis ?? {}, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `analysis-${id}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="w-full sm:w-auto px-3 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Download JSON
+            </button>
+            <button
+              onClick={() => setAll(true)}
+              className="w-full sm:w-auto px-3 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Expand all
+            </button>
+            <button
+              onClick={() => setAll(false)}
+              className="w-full sm:w-auto px-3 py-2 rounded border border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Collapse all
+            </button>
+          </div>
         </div>
       </div>
 
@@ -271,7 +266,7 @@ export default function ResultsPage() {
         id={`toggle:${id}:weights`}
         title="Topic Weights"
         defaultOpen
-        rightNode={<span className="text-xs text-gray-400"></span>}
+        rightNode={<span className="text-xs text-gray-400">bars: weight</span>}
         forceOpen={forceAll}
       >
         <div className="h-64">
@@ -292,7 +287,7 @@ export default function ResultsPage() {
         id={`toggle:${id}:durations`}
         title="Topic Duration (s)"
         defaultOpen
-        rightNode={<span className="text-xs text-gray-400"></span>}
+        rightNode={<span className="text-xs text-gray-400">bars: seconds</span>}
         forceOpen={forceAll}
       >
         <div className="h-64">
@@ -313,7 +308,7 @@ export default function ResultsPage() {
         id={`toggle:${id}:keywords`}
         title="Keyword Frequency"
         defaultOpen
-        rightNode={<span className="text-xs text-gray-400"></span>}
+        rightNode={<span className="text-xs text-gray-400">bars: count</span>}
         forceOpen={forceAll}
       >
         <div className="h-64">
