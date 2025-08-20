@@ -9,12 +9,12 @@ export default function UploadPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [fileLoading, setFileLoading] = useState(false);
+  const [fileLoading, setFileLoading] = useState<boolean>(false);
 
-  const [transcript, setTranscript] = useState("");
-  const [txLoading, setTxLoading] = useState(false);
+  const [transcript, setTranscript] = useState<string>("");
+  const [txLoading, setTxLoading] = useState<boolean>(false);
 
-  const MAX_BYTES = 100 * 1024 * 1024; // 100MB
+  const MAX_BYTES = 100 * 1024 * 1024;
 
   function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] || null;
@@ -23,6 +23,16 @@ export default function UploadPage() {
     if (f && f.size > MAX_BYTES) {
       setFile(null);
       setFileError("File too large (max 100MB).");
+    }
+  }
+
+  function getErrMsg(err: unknown): string {
+    if (err instanceof Error) return err.message;
+    if (typeof err === "string") return err;
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return "Unknown error";
     }
   }
 
@@ -60,9 +70,9 @@ export default function UploadPage() {
       });
 
       router.push(`/results/${docRef.id}`);
-    } catch (e: any) {
-      console.error(e);
-      setFileError(e?.message || "Transcription or analysis failed.");
+    } catch (err: unknown) {
+      console.error(err);
+      setFileError(getErrMsg(err) || "Transcription or analysis failed.");
     } finally {
       setFileLoading(false);
     }
@@ -90,9 +100,9 @@ export default function UploadPage() {
       });
 
       router.push(`/results/${docRef.id}`);
-    } catch (e: any) {
-      console.error(e);
-      alert(e?.message || "Analysis failed.");
+    } catch (err: unknown) {
+      console.error(err);
+      alert(getErrMsg(err) || "Analysis failed.");
     } finally {
       setTxLoading(false);
     }
@@ -152,7 +162,8 @@ export default function UploadPage() {
                   onClick={() => {
                     setFile(null);
                     setFileError(null);
-                    (document.getElementById("file") as HTMLInputElement).value = "";
+                    const el = document.getElementById("file") as HTMLInputElement | null;
+                    if (el) el.value = "";
                   }}
                   className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-gray-300 hover:bg-gray-600"
                 >
